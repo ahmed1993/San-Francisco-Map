@@ -1,0 +1,347 @@
+<!DOCTYPE html >
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <title>San Francisco</title>
+    <style>
+        #searchbox {
+        position: absolute;
+        //top: 10px;
+        //left: 25%;
+        z-index: 5;
+        background-color: windowframe;
+        padding: 5px;
+        border: 1px solid #999;
+        text-align: center;
+        font-family: 'Roboto','sans-serif';
+        line-height: 30px;
+        padding-left: 10px;
+        }
+        
+        #floating-panel{
+            position:absolute;
+            border-style: outset;
+            border-color: gold;
+        }
+        
+        #floating-panel2{
+            position:absolute;
+            border-style: outset;
+            border-color: gold;
+        }
+    </style>
+        
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-ok1_HWDCJ6WOruP_srKXS9JDlBvt0oM"
+    type="text/javascript"></script>
+     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-ok1_HWDCJ6WOruP_srKXS9JDlBvt0oM&signed_in=true&callback=initMap"
+        async defer></script>
+    <script type="text/javascript">
+        
+        var markersarray = [];
+        var markersarrayschool = [];
+        var searchmarkersarray = [];
+        var infoWindow = new google.maps.InfoWindow;
+        //used for getting latitude and longitude of the selected college
+        var latCollege = "37.774929";
+        var longCollege = "-122.419416";
+        var map = new google.maps.Map(document.getElementById("map"), {
+            center: new google.maps.LatLng(37.7833, -122.4167),
+            zoom: 13,
+            mapTypeId: 'roadmap'
+        });
+        //load the map
+        function load() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: new google.maps.LatLng(37.744555, -122.452593),
+                zoom: 13,
+                 mapTypeControlOptions: {
+                    style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                    position: google.maps.ControlPosition.LEFT_BOTTOM
+                 },    
+                mapTypeId: 'roadmap'
+            });
+            //push geocoding feature to top right of the map
+            map.controls[google.maps.ControlPosition.TOP_CENTER].push(
+                document.getElementById('searchbox'));
+        
+             map.controls[google.maps.ControlPosition.LEFT_TOP].push(
+                document.getElementById('floating-panel'));
+        
+            map.controls[google.maps.ControlPosition.LEFT_TOP].push(
+                document.getElementById('floating-panel2'));
+        
+            infoWindow = new google.maps.InfoWindow;
+            var geocoder = new google.maps.Geocoder();
+            document.getElementById('submit').addEventListener('click', function () {
+                geocodeAddress(geocoder, map);
+            });
+
+            //geocode the clicked location
+            var passedURL = "fetchxml.php";
+            downloadUrl(passedURL, function (data) {
+                var xml = data.responseXML;
+                var markers = xml.documentElement.getElementsByTagName("marker");
+                for (var i = 0; i < markers.length; i++) {
+                    var name = markers[i].getAttribute("name");
+                    var address = markers[i].getAttribute("street");
+                    var state = markers[i].getAttribute("state");
+                    var zip = markers[i].getAttribute("zip");
+                    var lati = markers[i].getAttribute("latitude");
+                    var longi = markers[i].getAttribute("longitude");
+
+
+
+                    var point = new google.maps.LatLng(
+                            parseFloat(markers[i].getAttribute("latitude")),
+                            parseFloat(markers[i].getAttribute("longitude")));
+                    var radiobut1 = "<form><input type ='radio' name = 'box' id = 'one' value ='1' onClick = 'validator()'>1\n\
+                    <input type ='radio' name = 'box'  id = 'two' value ='2' onClick = 'validator()'>2\n\
+                    <input type ='radio' name = 'box' id = 'three' value ='5' onClick = 'validator()'>5</form>";
+                    var html = "<b>" + name + "</b> <br/>" + address + "</b><br/>" + state + "</b><br/>" + zip + radiobut1;
+
+
+                    //var icon = customIcons[type] || {};
+                    var marker = new google.maps.Marker({
+                        map: map,
+                        animation: google.maps.Animation.DROP,
+                        position: point,
+                    });
+                    //markersarrayschool.push(marker);
+
+                    bindInfoWindow(marker, map, infoWindow, html);
+
+                }
+            });
+        }
+
+        //function for displaying restaurants depending on which radio button is checked
+        function validator() {
+            //if one mile is checked
+            if (document.getElementById('one').checked) {
+                deleteMarkers();
+                //$passedquery = "Select name1,street,city,state,zip,county,lat, long from ahmed.restaurant";
+                downloadUrl("fetchrestaurant.php?rad=1&lat=" + latCollege + "&long=" + longCollege, function (data) {
+                    var image = '';
+                    var xml = data.responseXML;
+                    var markers = xml.documentElement.getElementsByTagName("marker");
+                    for (var i = 0; i < markers.length; i++) {
+                        var name = markers[i].getAttribute("name");
+                        //the following if else if is for setting custom markers
+                        if (name == "McDonalds") {
+                            image = 'mcdonalds.png';
+                        }
+                        else if (name == "Starbucks") {
+                            image = 'starbucks.png';
+                        }
+                        else if (name == "Subway") {
+                            image = 'subway.png';
+                        }
+                        else if (name == "Burger King") {
+                            image = 'burgerking.png';
+                        }
+                        var address = markers[i].getAttribute("street");
+                        var state = markers[i].getAttribute("state");
+                        var zip = markers[i].getAttribute("zip");
+
+                        var point = new google.maps.LatLng(
+                                parseFloat(markers[i].getAttribute("latitude")),
+                                parseFloat(markers[i].getAttribute("longitude")));
+
+                        var html = "<b>" + name + "</b> <br/>" + address + "</b><br/>" + state + "</b><br/>" + zip;
+
+                        //var icon = customIcons[type] || {};
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: point,
+                            icon: image
+                                    //icon: icon.icon
+                        });
+                        markersarray.push(marker);
+                        bindInfoWindow(marker, map, infoWindow, html);
+                    }
+                });
+            }
+            //if two miles is checked
+            else if (document.getElementById('two').checked) {
+                deleteMarkers();
+                downloadUrl("fetchrestaurant.php?rad=2&lat=" + latCollege + "&long=" + longCollege, function (data) {
+                    var image = '';
+                    var xml = data.responseXML;
+                    var markers = xml.documentElement.getElementsByTagName("marker");
+                    for (var i = 0; i < markers.length; i++) {
+                        var name = markers[i].getAttribute("name");
+                        //the following if and else if is for setting custom markers
+                        if (name == "McDonalds") {
+                            image = 'mcdonalds.png';
+                        }
+                        else if (name == "Starbucks") {
+                            image = 'starbucks.png';
+                        }
+                        else if (name == "Subway") {
+                            image = 'subway.png';
+                        }
+                        else if (name == "Burger King") {
+                            image = 'burgerking.png';
+                        }
+                        var address = markers[i].getAttribute("street");
+                        var state = markers[i].getAttribute("state");
+                        var zip = markers[i].getAttribute("zip");
+
+                        var point = new google.maps.LatLng(
+                                parseFloat(markers[i].getAttribute("latitude")),
+                                parseFloat(markers[i].getAttribute("longitude")));
+                        var html = "<b>" + name + "</b> <br/>" + address + "</b><br/>" + state + "</b><br/>" + zip;
+
+                        //var icon = customIcons[type] || {};
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: point,
+                            icon: image
+                        });
+                        markersarray.push(marker);
+                        bindInfoWindow(marker, map, infoWindow, html);
+                    }
+                });
+            }
+            //if five miles is checked
+            else if (document.getElementById('three').checked) {
+                downloadUrl("fetchrestaurant.php?rad=5&lat=" + latCollege + "&long=" + longCollege, function (data) {
+                    var image = '';
+                    var xml = data.responseXML;
+                    var markers = xml.documentElement.getElementsByTagName("marker");
+                    for (var i = 0; i < markers.length; i++) {
+                        var name = markers[i].getAttribute("name");
+                        //the following if else if is for setting custom markers
+                        if (name == "McDonalds") {
+                            image = 'mcdonalds.png';
+                        }
+                        else if (name == "Starbucks") {
+                            image = 'starbucks.png';
+                        }
+                        else if (name == "Subway") {
+                            image = 'subway.png';
+                        }
+                        else {
+                            image = 'burgerking.png';
+                        }
+                        var address = markers[i].getAttribute("street");
+                        var state = markers[i].getAttribute("state");
+                        var zip = markers[i].getAttribute("zip");
+
+                        var point = new google.maps.LatLng(
+                                parseFloat(markers[i].getAttribute("latitude")),
+                                parseFloat(markers[i].getAttribute("longitude")));
+
+                        var html = "<b>" + name + "</b> <br/>" + address + "</b><br/>" + state + "</b><br/>" + zip;
+
+                        //var icon = customIcons[type] || {};
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: point,
+                            icon: image
+                        });
+                        markersarray.push(marker);
+                        bindInfoWindow(marker, map, infoWindow, html);
+                    }
+                });
+            }
+        }
+        
+        //geocoding gotten from google
+        function geocodeAddress(geocoder, resultsMap) {
+            var address = document.getElementById('address').value;
+             var radiobut1 = "<form><input type ='radio' name = 'box' id = 'one' value ='1' onClick = 'validator()'>1\n\
+                    <input type ='radio' name = 'box'  id = 'two' value ='2' onClick = 'validator()'>2\n\
+                    <input type ='radio' name = 'box' id = 'three' value ='5' onClick = 'validator()'>5</form>";
+            geocoder.geocode({'address': address}, function (results, status) {
+                if (status === google.maps.GeocoderStatus.OK) {
+                    //resultsMap.setCenter(results[0].geometry.location);
+                    var marker = new google.maps.Marker({
+                        animation: google.maps.Animation.DROP,
+                        map: resultsMap,
+                        position: results[0].geometry.location
+                    });
+                    var html = address + radiobut1;
+                     bindInfoWindow(marker, map, infoWindow, html);
+                     searchmarkersarray.push(marker);
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+        }
+
+// Sets the map on all markers in the array.
+        function setMapOnAll(map) {
+            for (var i = 0; i < markersarray.length; i++) {
+                markersarray[i].setMap(map);
+            }
+        }
+        //listener event for click on a school
+        function bindInfoWindow(marker, map, infoWindow, html) {
+            google.maps.event.addListener(marker, 'click', function () {
+                //alert(marker.position.lat());
+                infoWindow.setContent(html);
+                infoWindow.open(map, marker);
+                //these two variables are put into the URL and then retrieved using $_GET in fetchrestaurant
+                latCollege = marker.position.lat();
+                longCollege = marker.position.long();
+            });
+        }
+        
+        //this method is used for deleting the search markers 
+        function deleteSearchMarkers(){
+            while(searchmarkersarray.length > 0){
+                searchmarkersarray.pop().setMap(null);
+            }
+            searchmarkersarray.length = 0;
+        }
+        // Deletes all markers in the array by removing references to them.
+        function deleteMarkers() {
+            //clearMarkers();
+            //markersarray = [];
+            while (markersarray.length > 0) {
+                markersarray.pop().setMap(null);
+            }
+            markersarray.length = 0;
+        }
+        //gets the correct URL when displaying restaurants and schools to fetch from XML
+        function downloadUrl(url, callback) {
+            var request = window.ActiveXObject ?
+                    new ActiveXObject('Microsoft.XMLHTTP') :
+                    new XMLHttpRequest;
+
+            request.onreadystatechange = function () {
+                if (request.readyState == 4) {
+                    request.onreadystatechange = doNothing;
+                    callback(request, request.status);
+                }
+            };
+
+            request.open('GET', url, true);
+            request.send(null);
+        }
+
+        function doNothing() {
+        }
+
+        //]]>
+
+    </script>
+
+</head>
+
+<body onload="load()">
+    <div id="searchbox">
+        <input id="address" type="text" value="">
+        <input id="submit" type="button" value="Geocode">
+    </div>
+    <div id="floating-panel">
+        <input onclick="deleteMarkers();" type=button value="Delete  Restaurant Markers">
+    </div>
+    <div id="floating-panel2">
+        <input onclick="deleteSearchMarkers();" type=button value="Delete Search Markers">
+    </div>
+    <div id="map" style="width: 1390px; height: 1000px"></div>
+</body>
+
+</html>
